@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Four</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        header {
+            background-color: #1e1e2f;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        header .logo {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        header nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+        header nav ul li {
+            margin: 0 20px;
+        }
+        header nav ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        header nav ul li a:hover {
+            background-color: #61dafb;
+        }
+        main {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: auto;
+            text-align: center;
+        }
+        .board-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 70px);
+            grid-gap: 5px;
+            justify-content: center;
+            margin: 20px auto;
+            background-color: #0066CC;
+            padding: 10px;
+            border-radius: 10px;
+            background: linear-gradient(145deg, #007acc, #005fa3);
+            box-shadow: 5px 5px 15px #004C99, -5px -5px 15px #007acc;
+        }
+        .cell {
+            width: 70px;
+            height: 70px;
+            background-color: #fff;
+            border: 2px solid #004C99;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .red, .yellow {
+            border-radius: 50%;
+            width: 90%;
+            height: 90%;
+            transform: translateY(0);
+        }
+        .red {
+            background-color: red;
+        }
+        .yellow {
+            background-color: yellow;
+        }
+        .status {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .reset-btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        footer {
+            background-color: #1e1e2f;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+        }
+        footer p {
+            margin: 5px 0;
+        }
+        footer a {
+            color: #61dafb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        footer a:hover {
+            color: #a3ecff;
+        }
+        @keyframes drop {
+            0% {
+                transform: translateY(-500px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+        .animated-drop {
+            animation: drop 0.8s cubic-bezier(0.42, 0, 0.58, 1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">NexusGames</div>
+        <nav>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="CatchItems.html">Catch Items</a></li>
+                <li><a href="Tic Tac Toe.html">Tic Tac Toe</a></li>
+                <li><a href="Wack A Mole.html">Whack-A-Mole</a></li>
+                <li><a href="Connect Four.html">Connect Four</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div class="board-container">
+            <div class="status" id="status">Current Player: <span id="current-player">Red</span></div>
+            <div class="board" id="board">
+                <!-- Cells will be added dynamically -->
+            </div>
+            <button class="reset-btn" onclick="resetBoard()">Reset Game</button>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2024 CodeCanvas. All rights reserved.</p>
+        <a href="https://volcano08.github.io/Portfolio/" target="_blank">Go to Portfolio</a>
+    </footer>
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        let currentPlayer = 'red';
+        let gameOver = false;
+        const board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+        const statusElement = $('#status');
+        const currentPlayerElement = $('#current-player');
+
+        function createBoard() {
+            const boardElement = $('#board');
+            boardElement.empty();
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = $('<div>').addClass('cell').attr('data-row', row).attr('data-col', col);
+                    cell.on('click', handleCellClick);
+                    boardElement.append(cell);
+                }
+            }
+        }
+
+        function handleCellClick(event) {
+            if (gameOver) return;
+            const col = $(event.target).data('col');
+            for (let row = ROWS - 1; row >= 0; row--) {
+                if (!board[row][col]) {
+                    board[row][col] = currentPlayer;
+                    const cell = $(`.cell[data-row="${row}"][data-col="${col}"]`);
+                    const coin = $('<div>').addClass(currentPlayer).addClass('animated-drop');
+                    cell.append(coin);
+
+                    coin.on('animationend', () => {
+                        coin.removeClass('animated-drop');
+                    });
+
+                    if (checkWinner(row, col)) {
+                        gameOver = true;
+                        setTimeout(() => {
+                            alert(`${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} wins!`);
+                            resetBoard();
+                        }, 500);
+                    } else if (board.flat().every(cell => cell !== null)) {
+                        gameOver = true;
+                        setTimeout(() => {
+                            alert('Draw! No more moves left.');
+                            resetBoard();
+                        }, 500);
+                    } else {
+                        currentPlayer = currentPlayer === 'red' ? 'yellow' : 'red';
+                        currentPlayerElement.text(currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1));
+                    }
+                    break;
+                }
+            }
+        }
+
+        function checkWinner(row, col) {
+            return (
+                checkDirection(row, col, 1, 0) || // horizontal
+                checkDirection(row, col, 0, 1) || // vertical
+                checkDirection(row, col, 1, 1) || // diagonal \
+                checkDirection(row, col, 1, -1)   // diagonal /
+            );
+        }
+
+        function checkDirection(row, col, rowDir, colDir) {
+            let count = 1; // Start with the current piece
+            count += countInDirection(row, col, rowDir, colDir);
+            count += countInDirection(row, col, -rowDir, -colDir);
+            return count >= 4;
+        }
+
+        function countInDirection(row, col, rowDir, colDir) {
+            let r = row + rowDir;
+            let c = col + colDir;
+            let count = 0;
+
+            while (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === currentPlayer) {
+                count++;
+                r += rowDir;
+                c += colDir;
+            }
+            return count;
+        }
+
+        function resetBoard() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    board[row][col] = null;
+                }
+            }
+            $('.cell').empty();
+            currentPlayer = 'red';
+            gameOver = false;
+            currentPlayerElement.text('Red');
+        }
+
+        $(document).ready(() => {
+            createBoard();
+        });
+    </script>
+</body>
+</html>

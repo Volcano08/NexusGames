@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Play Whack-A-Mole, a fun and interactive arcade game! Try to hit as many moles as you can before time runs out.">
+    <title>Whack-A-Mole Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            background-color: #1e1e2f;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        header .logo {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        header nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+        header nav ul li {
+            margin: 0 20px;
+        }
+        header nav ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        header nav ul li a:hover {
+            background-color: #61dafb;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-color: #f0f2f5;
+            position: relative;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .mole {
+            width: 80px;
+            height: 80px;
+            background-image: url('../Images/Mole.png'); /* Add mole image */
+            background-size: cover;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            transition: transform 0.2s;
+        }
+        .hidden {
+            transform: scale(0);
+        }
+        .custom-cursor {
+            cursor: url('../Images/Hammer.png'), auto; /* Add hammer image as custom cursor */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 20px;
+            cursor: pointer;
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #666;
+        }
+        #score-board, #timer-board {
+            font-size: 20px;
+            margin: 10px;
+            color: #333;
+        }
+        footer {
+            background-color: #1e1e2f;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+        }
+        footer p {
+            margin: 5px 0;
+        }
+        footer a {
+            color: #61dafb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        footer a:hover {
+            color: #a3ecff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">NexusGames</div>
+        <nav>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="CatchItems.html">Catch Items</a></li>
+                <li><a href="Tic Tac Toe.html">Tic Tac Toe</a></li>
+                <li><a href="Wack A Mole.html">Whack-A-Mole</a></li>
+                <li><a href="Connect Four.html">Connect Four</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button id="start-button" onclick="startGame()">Start Game</button>
+        <div id="score-board">Score: 0</div>
+        <div id="timer-board">Time: 30s</div>
+    </main>
+    <footer>
+        <p>&copy; 2024 CodeCanvas. All rights reserved.</p>
+        <a href="https://volcano08.github.io/Portfolio/" target="_blank">Go to Portfolio</a>
+    </footer>
+    <script>
+        let score = 0;
+        let gameInterval;
+        let gameDuration = 30000; // 30 seconds
+        let gameTimer;
+        let timeLeft = gameDuration / 1000;
+        const hitSound = new Audio('https://freesound.org/data/previews/264/264985_5003031-lq.mp3'); // Use a howl sound from freesound.org
+        const startButton = document.getElementById('start-button');
+        const scoreBoard = document.getElementById('score-board');
+        const timerBoard = document.getElementById('timer-board');
+        const board = document.getElementById('board');
+
+        let gameActive = false;
+        let moleElement = null;
+
+        document.addEventListener('mouseup', (e) => {
+            if (gameActive) {
+                if (moleElement && isHammerOnMole(e)) {
+                    score++;
+                    hitSound.play();
+                    scoreBoard.innerText = 'Score: ' + score;
+                    moleElement.remove();
+                    moleElement = null;
+                }
+            }
+        });
+
+        function isHammerOnMole(e) {
+            const rect = moleElement.getBoundingClientRect();
+            return (
+                e.clientX >= rect.left &&
+                e.clientX <= rect.right &&
+                e.clientY >= rect.top &&
+                e.clientY <= rect.bottom
+            );
+        }
+
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            timeLeft = gameDuration / 1000;
+            scoreBoard.innerText = 'Score: ' + score;
+            timerBoard.innerText = 'Time: ' + timeLeft + 's';
+            clearInterval(gameInterval);
+            clearInterval(gameTimer);
+            gameInterval = setInterval(showMole, 1000);
+            gameTimer = setInterval(updateTimer, 1000);
+            setTimeout(endGame, gameDuration);
+            board.classList.add('custom-cursor'); // Apply custom cursor
+        }
+
+        function showMole() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.innerHTML = '');
+            const randomIndex = Math.floor(Math.random() * cells.length);
+            const mole = document.createElement('div');
+            mole.classList.add('mole');
+            cells[randomIndex].appendChild(mole);
+            moleElement = mole;
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerBoard.innerText = 'Time: ' + timeLeft + 's';
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameInterval);
+            clearInterval(gameTimer);
+            alert('Game over! Your score is ' + score);
+            board.classList.remove('custom-cursor'); // Remove custom cursor
+            moleElement = null;
+        }
+    </script>
+</body>
+</html>
